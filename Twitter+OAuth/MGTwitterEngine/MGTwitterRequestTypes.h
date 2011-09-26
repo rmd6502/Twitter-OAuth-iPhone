@@ -15,6 +15,7 @@ typedef enum _MGTwitterRequestType {
 	MGTwitterUserTimelineForUserRequest, // statuses archive for the specified user
 	MGTwitterUpdateGetRequest, // get a status update for the specified id
 	MGTwitterUpdateSendRequest, // send a new update for the current user
+    MGTwitterUpdateSendMediaRequest, // Send a new update with media for current user
 	MGTwitterUpdateDeleteRequest, // delete an update for the current user using the specified id
     MGTwitterRepliesRequest, // latest reply status for the current user
     MGTwitterFeaturedUsersRequest, // latest status from featured users

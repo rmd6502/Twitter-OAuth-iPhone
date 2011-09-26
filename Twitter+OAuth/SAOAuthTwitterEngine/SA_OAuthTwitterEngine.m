@@ -18,6 +18,8 @@
 
 #import "SA_OAuthTwitterEngine.h"
 
+static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
+
 @interface SA_OAuthTwitterEngine (private)
 
 - (void) requestURL:(NSURL *) url token:(OAToken *)token onSuccess:(SEL)success onFail:(SEL)fail;
@@ -256,6 +258,7 @@
                         responseType:(MGTwitterResponseType)responseType
 {
     NSString *fullPath = path;
+    BOOL isPOST = (method && [method isEqualToString:@"POST"]);
 
 	// --------------------------------------------------------------------------------
 	// modificaiton from the base clase
@@ -265,10 +268,10 @@
 	//        fullPath = [self _queryStringWithBase:fullPath parameters:params prefixed:YES];
 	//    }
 	// --------------------------------------------------------------------------------
-
+    NSString *domain = requestType == MGTwitterUpdateSendMediaRequest ? _UploadDomain : _APIDomain;
     NSString *urlString = [NSString stringWithFormat:@"%@://%@/%@", 
                            (_secureConnection) ? @"https" : @"http",
-                           _APIDomain, fullPath];
+                           domain, fullPath];
     NSURL *finalURL = [NSURL URLWithString:urlString];
     if (!finalURL) {
         return nil;
@@ -295,26 +298,41 @@
     [theRequest setHTTPShouldHandleCookies:NO];
     
     // Set headers for client information, for tracking purposes at Twitter.
-    [theRequest setValue:_clientName    forHTTPHeaderField:@"X-Twitter-Client"];
-    [theRequest setValue:_clientVersion forHTTPHeaderField:@"X-Twitter-Client-Version"];
-    [theRequest setValue:_clientURL     forHTTPHeaderField:@"X-Twitter-Client-URL"];
+//    [theRequest setValue:_clientName    forHTTPHeaderField:@"X-Twitter-Client"];
+//    [theRequest setValue:_clientVersion forHTTPHeaderField:@"X-Twitter-Client-Version"];
+//    [theRequest setValue:_clientURL     forHTTPHeaderField:@"X-Twitter-Client-URL"];
     
+    NSLog(@"URL: %@", finalURL);
     // Set the request body if this is a POST request.
-    BOOL isPOST = (method && [method isEqualToString:@"POST"]);
     if (isPOST) {
-        // Set request body, if specified (hopefully so), with 'source' parameter if appropriate.
-        NSString *finalBody = @"";
-		if (body) {
-			finalBody = [finalBody stringByAppendingString:body];
-		}
-        if (_clientSourceToken) {
-            finalBody = [finalBody stringByAppendingString:[NSString stringWithFormat:@"%@source=%@", 
-                                                            (body) ? @"&" : @"?" , 
-                                                            _clientSourceToken]];
-        }
-        
-        if (finalBody) {
-            [theRequest setHTTPBody:[finalBody dataUsingEncoding:NSUTF8StringEncoding]];
+        if (body == nil) 
+        {
+//            if (_clientSourceToken && [params objectForKey:@"source"] == nil) {
+//                [params setValue:_clientSourceToken forKey:@"source"];
+//            }
+            [theRequest setValue:[NSString stringWithFormat:@"multipart/form_data; boundary=%@", kStringBoundary] forHTTPHeaderField:@"Content-Type"];
+            [theRequest setHTTPBody:[self generatePostBodyWithParams:params]];
+            [theRequest setValue:[NSString stringWithFormat:@"%u",theRequest.HTTPBody.length] forHTTPHeaderField:@"Content-Length"];
+            //NSString *bodyStr = [[NSString alloc] initWithData:theRequest.HTTPBody encoding:NSUTF8StringEncoding];
+            NSLog(@"request headers %@ params %@ len %u\n\nbody:\n\n%@\n\n", theRequest.allHTTPHeaderFields, params, theRequest.HTTPBody.length, theRequest.HTTPBodythaat);
+            //[bodyStr release];
+        } 
+        else
+        {
+            // Set request body, if specified (hopefully so), with 'source' parameter if appropriate.
+            NSString *finalBody = @"";
+            if (body) {
+                finalBody = [finalBody stringByAppendingString:body];
+            }
+            if (_clientSourceToken) {
+                finalBody = [finalBody stringByAppendingString:[NSString stringWithFormat:@"%@source=%@", 
+                                                                (body) ? @"&" : @"?" , 
+                                                                _clientSourceToken]];
+            }
+            
+            if (finalBody) {
+                [theRequest setHTTPBody:[finalBody dataUsingEncoding:NSUTF8StringEncoding]];
+            }
         }
     }
 
@@ -322,7 +340,8 @@
 	// modificaiton from the base clase
 	// our version "prepares" the oauth url request
 	// --------------------------------------------------------------------------------
-	[theRequest prepare];
+    [theRequest prepare];
+    
     
     // Create a connection using this request, with the default timeout and caching policy, 
     // and appropriate Twitter request and response types for parsing and error reporting.

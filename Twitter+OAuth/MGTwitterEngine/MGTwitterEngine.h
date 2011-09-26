@@ -21,6 +21,7 @@
     NSString *_clientURL;
     NSString *_clientSourceToken;
 	NSString *_APIDomain;
+    NSString *_UploadDomain;
 #if YAJL_AVAILABLE
 	NSString *_searchDomain;
 #endif
@@ -31,6 +32,7 @@
 #endif
 }
 
+@property (assign) NSObject <MGTwitterEngineDelegate> *delegate;
 #pragma mark Class management
 
 // Constructors
@@ -74,6 +76,8 @@
 // As with the Twitter API methods below, it returns a unique connection identifier.
 // Retrieved images are sent to the delegate via the -imageReceived:forRequest: method.
 - (NSString *)getImageAtURL:(NSString *)urlString;
+- (void)utfAppendBody:(NSMutableData *)body data:(NSString *)data;
+- (NSMutableData *)generatePostBodyWithParams:(NSDictionary *)params;
 
 #pragma mark REST API methods
 
@@ -96,6 +100,7 @@
 - (NSString *)getUpdate:(unsigned long)updateID; // statuses/show
 - (NSString *)sendUpdate:(NSString *)status; // statuses/update
 - (NSString *)sendUpdate:(NSString *)status inReplyTo:(unsigned long)updateID; // statuses/update
+- (NSString *)sendUpdate:(NSString *)status withMedia:(UIImage *)media lat:(double *)lat lon:(double *)lon; // statuses/update_with_media
 
 - (NSString *)getRepliesStartingAtPage:(int)pageNum; // statuses/mentions
 - (NSString *)getRepliesSinceID:(unsigned long)sinceID startingAtPage:(int)pageNum count:(int)count; // statuses/mentions
