@@ -41,6 +41,7 @@
 #if YAJL_AVAILABLE
 	#define TWITTER_SEARCH_DOMAIN	@"search.twitter.com"
 #endif
+#define TWITTER_UPLOAD_DOMAIN   @"upload.twitter.com"
 #define HTTP_POST_METHOD        @"POST"
 #define MAX_MESSAGE_LENGTH      140 // Twitter recommends tweets of max 140 chars
 #define MAX_NAME_LENGTH			20
@@ -53,6 +54,8 @@
 #define DEFAULT_CLIENT_VERSION  @"1.0"
 #define DEFAULT_CLIENT_URL      @"http://mattgemmell.com/source"
 #define DEFAULT_CLIENT_TOKEN	@"mgtwitterengine"
+
+static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
 
 #define URL_REQUEST_TIMEOUT     25.0 // Twitter usually fails quickly if it's going to fail at all.
 
@@ -84,7 +87,7 @@
 
 
 @implementation MGTwitterEngine
-
+@synthesize delegate = _delegate;
 
 #pragma mark Constructors
 
@@ -105,6 +108,7 @@
         _clientURL = [DEFAULT_CLIENT_URL retain];
 		_clientSourceToken = [DEFAULT_CLIENT_TOKEN retain];
 		_APIDomain = [TWITTER_DOMAIN retain];
+        _UploadDomain = [TWITTER_UPLOAD_DOMAIN retain];
 #if YAJL_AVAILABLE
 		_searchDomain = [TWITTER_SEARCH_DOMAIN retain];
 #endif
@@ -456,9 +460,11 @@
                          requestType:(MGTwitterRequestType)requestType 
                         responseType:(MGTwitterResponseType)responseType
 {
+    BOOL isPOST = (method && [method isEqualToString:HTTP_POST_METHOD]);
+    
     // Construct appropriate URL string.
     NSString *fullPath = path;
-    if (params) {
+    if (isPOST && params) {
         fullPath = [self _queryStringWithBase:fullPath parameters:params prefixed:YES];
     }
 
@@ -470,6 +476,19 @@
 		domain = _searchDomain;
 		connectionType = @"http";
 	}
+    else if (requestType == MGTwitterUpdateSendMediaRequest) 
+    {
+        domain = _UploadDomain;
+        if (_secureConnection)
+		{
+			connectionType = @"https";
+		}
+		else
+		{
+			connectionType = @"http";
+            NSLog(@"WARNING: Twitter recommends using SSL for media upload");
+		}
+    }
 	else
 	{
 		domain = _APIDomain;
@@ -483,16 +502,34 @@
 		}
 	}
 #else
-	NSString *domain = _APIDomain;
+    NSString *domain = nil;
 	NSString *connectionType = nil;
-	if (_secureConnection)
-	{
-		connectionType = @"https";
-	}
-	else
-	{
-		connectionType = @"http";
-	}
+    if (requestType == MGTwitterUpdateSendMediaRequest) 
+    {
+        domain = _UploadDomain;
+        if (_secureConnection)
+		{
+			connectionType = @"https";
+		}
+		else
+		{
+			connectionType = @"http";
+            NSLog(@"WARNING: Twitter recommends using SSL for media upload");
+		}
+    }
+    else 
+    {
+        domain = _APIDomain;
+        connectionType = nil;
+        if (_secureConnection)
+        {
+            connectionType = @"https";
+        }
+        else
+        {
+            connectionType = @"http";
+        }
+    }
 #endif
 	
 #if SET_AUTHORIZATION_IN_HEADER
@@ -542,26 +579,36 @@
 #endif
 
     // Set the request body if this is a POST request.
-    BOOL isPOST = (method && [method isEqualToString:HTTP_POST_METHOD]);
+    
     if (isPOST) {
-        // Set request body, if specified (hopefully so), with 'source' parameter if appropriate.
-        NSString *finalBody = @"";
-		if (body) {
-			finalBody = [finalBody stringByAppendingString:body];
-		}
-        if (_clientSourceToken) {
-            finalBody = [finalBody stringByAppendingString:[NSString stringWithFormat:@"%@source=%@", 
-                                                            (body) ? @"&" : @"?" , 
-                                                            _clientSourceToken]];
-        }
-        
-        if (finalBody) {
-            [theRequest setHTTPBody:[finalBody dataUsingEncoding:NSUTF8StringEncoding]];
-#if DEBUG
-			if (YES) {
-				NSLog(@"MGTwitterEngine: finalBody = %@", finalBody);
-			}
-#endif
+        if (body == nil) 
+        {
+            if (_clientSourceToken && [params objectForKey:@"source"] == nil) {
+                [params setValue:_clientSourceToken forKey:@"source"];
+            }
+            [theRequest setHTTPBody:[self generatePostBodyWithParams:params]];
+        } 
+        else
+        {
+            // Set request body, if specified (hopefully so), with 'source' parameter if appropriate.
+            NSString *finalBody = @"";
+            if (body) {
+                finalBody = [finalBody stringByAppendingString:body];
+            }
+            if (_clientSourceToken) {
+                finalBody = [finalBody stringByAppendingString:[NSString stringWithFormat:@"%@source=%@", 
+                                                                (body) ? @"&" : @"?" , 
+                                                                _clientSourceToken]];
+            }
+            
+            if (finalBody) {
+                [theRequest setHTTPBody:[finalBody dataUsingEncoding:NSUTF8StringEncoding]];
+    #if DEBUG
+                if (YES) {
+                    NSLog(@"MGTwitterEngine: finalBody = %@", finalBody);
+                }
+    #endif
+            }
         }
     }
     
@@ -1040,6 +1087,87 @@
                            responseType:MGTwitterStatus];
 }
 
+- (NSString *)sendUpdate:(NSString *)status withMedia:(UIImage *)media lat:(double *)lat lon:(double *)lon {
+    NSMutableDictionary *params = [NSMutableDictionary dictionaryWithCapacity:10];
+    [params setObject:status forKey:@"status"];
+    [params setObject:media forKey:@"media[]"];
+    if (lat != nil && lon != nil) {
+        [params setObject:[NSNumber numberWithDouble:*lat] forKey:@"lat"];
+        [params setObject:[NSNumber numberWithDouble:*lon] forKey:@"long"];
+    }
+    
+    NSString *path = [NSString stringWithFormat:@"1/statuses/update_with_media.%@", API_FORMAT];
+    
+    return [self _sendRequestWithMethod:HTTP_POST_METHOD path:path 
+                        queryParameters:params body:nil 
+                            requestType:MGTwitterUpdateSendMediaRequest
+                           responseType:MGTwitterStatus];
+}
+
+/**
+  * Body append for POST method
+  */
+- (void)utfAppendBody:(NSMutableData *)body data:(NSString *)data {
+    [body appendData:[data dataUsingEncoding:NSUTF8StringEncoding]];
+    }
+
+/**
+  * Generate body for POST method
+  */
+- (NSMutableData *)generatePostBodyWithParams:(NSDictionary *)params {
+    NSMutableData *body = [NSMutableData data];
+    NSString *endLine = [NSString stringWithFormat:@"\r\n--%@\r\n", kStringBoundary];
+    NSMutableDictionary *dataDictionary = [NSMutableDictionary dictionary];
+    
+    [self utfAppendBody:body data:[NSString stringWithFormat:@"--%@\r\n", kStringBoundary]];
+    
+    for (id key in [params keyEnumerator]) {
+        
+        if (([[params valueForKey:key] isKindOfClass:[UIImage class]])
+            ||([[params valueForKey:key] isKindOfClass:[NSData class]])) {
+            
+            [dataDictionary setObject:[params valueForKey:key] forKey:key];
+            continue;
+            
+        }
+        
+        [self utfAppendBody:body
+                       data:[NSString
+                             stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n",
+                             key]];
+        [self utfAppendBody:body data:[params valueForKey:key]];
+        
+        [self utfAppendBody:body data:endLine];
+    }
+    
+    if ([dataDictionary count] > 0) {
+        for (id key in dataDictionary) {
+            NSObject *dataParam = [dataDictionary valueForKey:key];
+            if ([dataParam isKindOfClass:[UIImage class]]) {
+                NSData* imageData = UIImagePNGRepresentation((UIImage*)dataParam);
+                [self utfAppendBody:body
+                               data:[NSString stringWithFormat:
+                                     @"Content-Disposition: form-data; filename=\"%@\"\r\n", key]];
+                [self utfAppendBody:body
+                               data:[NSString stringWithString:@"Content-Type: image/png\r\n\r\n"]];
+                [body appendData:imageData];
+            } else {
+                NSAssert([dataParam isKindOfClass:[NSData class]],
+                         @"dataParam must be a UIImage or NSData");
+                [self utfAppendBody:body
+                               data:[NSString stringWithFormat:
+                                     @"Content-Disposition: form-data; filename=\"%@\"\r\n", key]];
+                [self utfAppendBody:body
+                               data:[NSString stringWithString:@"Content-Type: content/unknown\r\n\r\n"]];
+                [body appendData:(NSData*)dataParam];
+            }
+            [self utfAppendBody:body data:endLine];
+            
+        }
+    }
+    
+    return body;
+}
 
 #pragma mark -
 
