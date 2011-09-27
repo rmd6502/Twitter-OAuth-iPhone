@@ -314,7 +314,7 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
             [theRequest setHTTPBody:[self generatePostBodyWithParams:params]];
             [theRequest setValue:[NSString stringWithFormat:@"%u",theRequest.HTTPBody.length] forHTTPHeaderField:@"Content-Length"];
             //NSString *bodyStr = [[NSString alloc] initWithData:theRequest.HTTPBody encoding:NSUTF8StringEncoding];
-            NSLog(@"request headers %@ params %@ len %u\n\nbody:\n\n%@\n\n", theRequest.allHTTPHeaderFields, params, theRequest.HTTPBody.length, theRequest.HTTPBodythaat);
+            NSLog(@"request headers %@ params %@ len %u\n\nbody:\n\n%@\n\n", theRequest.allHTTPHeaderFields, params, theRequest.HTTPBody.length, theRequest.HTTPBody);
             //[bodyStr release];
         } 
         else
