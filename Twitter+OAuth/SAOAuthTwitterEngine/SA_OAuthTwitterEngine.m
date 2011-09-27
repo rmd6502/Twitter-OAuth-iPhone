@@ -298,9 +298,9 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
     [theRequest setHTTPShouldHandleCookies:NO];
     
     // Set headers for client information, for tracking purposes at Twitter.
-//    [theRequest setValue:_clientName    forHTTPHeaderField:@"X-Twitter-Client"];
-//    [theRequest setValue:_clientVersion forHTTPHeaderField:@"X-Twitter-Client-Version"];
-//    [theRequest setValue:_clientURL     forHTTPHeaderField:@"X-Twitter-Client-URL"];
+    [theRequest setValue:_clientName    forHTTPHeaderField:@"X-Twitter-Client"];
+    [theRequest setValue:_clientVersion forHTTPHeaderField:@"X-Twitter-Client-Version"];
+    [theRequest setValue:_clientURL     forHTTPHeaderField:@"X-Twitter-Client-URL"];
     
     NSLog(@"URL: %@", finalURL);
     // Set the request body if this is a POST request.
@@ -314,7 +314,7 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
             [theRequest setHTTPBody:[self generatePostBodyWithParams:params]];
             [theRequest setValue:[NSString stringWithFormat:@"%u",theRequest.HTTPBody.length] forHTTPHeaderField:@"Content-Length"];
             //NSString *bodyStr = [[NSString alloc] initWithData:theRequest.HTTPBody encoding:NSUTF8StringEncoding];
-            NSLog(@"request headers %@ params %@ len %u\n\nbody:\n\n%@\n\n", theRequest.allHTTPHeaderFields, params, theRequest.HTTPBody.length, theRequest.HTTPBodythaat);
+            NSLog(@"request headers %@ params %@ len %u\n\n", theRequest.allHTTPHeaderFields, params, theRequest.HTTPBody.length);
             //[bodyStr release];
         } 
         else
@@ -341,7 +341,7 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
 	// our version "prepares" the oauth url request
 	// --------------------------------------------------------------------------------
     [theRequest prepare];
-    
+    NSLog(@"after prepare: request headers %@ params %@ len %u\n\n", theRequest.allHTTPHeaderFields, params, theRequest.HTTPBody.length);
     
     // Create a connection using this request, with the default timeout and caching policy, 
     // and appropriate Twitter request and response types for parsing and error reporting.
