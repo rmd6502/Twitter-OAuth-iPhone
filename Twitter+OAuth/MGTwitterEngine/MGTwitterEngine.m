@@ -456,7 +456,8 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
 }
 
 /**
- * Generate body for POST method
+ * Generate body for POST method.
+ * This is inspired by a method of the same name in FBRequest.m, but customized for twitter.
  */
 - (NSMutableData *)generatePostBodyWithParams:(NSDictionary *)params {
     NSMutableString *debugStr = [NSMutableString string];
@@ -480,15 +481,16 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
         NSObject *dataParam = [params valueForKey:key];
         if ([dataParam isKindOfClass:[UIImage class]]) {
             //NSData* imageData = UIImagePNGRepresentation((UIImage*)dataParam);
-            NSData* imageData = [[UIImageJPEGRepresentation((UIImage *)dataParam, 1.0) base64EncodingWithLineLength:0] dataUsingEncoding:NSUTF8StringEncoding];
+            NSData* imageData = UIImageJPEGRepresentation((UIImage *)dataParam, 1.0);
+            
             NSLog(@"image data size %u", imageData.length);
             [self utfAppendBody:body
                            data:[NSString stringWithFormat:
-                                 @"Content-Disposition: form-data; name=\"%@\"; filename=\"./image.png\"r\n", key]];
-            [debugStr appendFormat:@"Content-Disposition: form-data; name=\"%@\"; filename=\"./image.png\"\r\n", key];
+                                 @"Content-Disposition: form-data; name=\"%@\"; filename=\"image.jpg\"r\n", key]];
+            [debugStr appendFormat:@"Content-Disposition: form-data; name=\"%@\"; filename=\"image.jpg\"\r\n", key];
             [self utfAppendBody:body
-                           data:[NSString stringWithString:@"Content-Type: application/octet-stream\r\n\r\n"]];
-            [debugStr appendString:@"Content-Type: application/octet-stream\r\n\r\n"];
+                           data:[NSString stringWithString:@"Content-Type: image/jpeg\r\n\r\n"]];
+            [debugStr appendString:@"Content-Type: image/jpeg\r\n\r\n"];
             [body appendData:imageData];
             [debugStr appendString:@"<image data>"];
             
@@ -1180,7 +1182,7 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
 - (NSString *)sendUpdate:(NSString *)status withMedia:(UIImage *)media lat:(double *)lat lon:(double *)lon {
     NSMutableDictionary *params = [NSMutableDictionary dictionaryWithCapacity:10];
     [params setObject:status forKey:@"status"];
-    [params setObject:media forKey:@"media_data[]"];
+    [params setObject:media forKey:@"media[]"];
     if (lat != nil && lon != nil) {
         [params setObject:[NSNumber numberWithDouble:*lat] forKey:@"lat"];
         [params setObject:[NSNumber numberWithDouble:*lon] forKey:@"long"];
@@ -1234,7 +1236,7 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
         for (id key in dataDictionary) {
             NSObject *dataParam = [dataDictionary valueForKey:key];
             if ([dataParam isKindOfClass:[UIImage class]]) {
-                NSData* imageData = UIImagePNGRepresentation((UIImage*)dataParam);
+                NSData* imageData = UIImageJPEGRepresentation((UIImage*)dataParam, 1.0f);
                 [self utfAppendBody:body
                                data:[NSString stringWithFormat:
                                      @"Content-Disposition: form-data; filename=\"%@\"\r\n", key]];

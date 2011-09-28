@@ -160,15 +160,6 @@ signatureProvider:(id<OASignatureProviding, NSObject>)aProvider
 //                             timestamp,
 //                             nonce
 //							 ];
-//    NSString *oauthHeader = [NSString stringWithFormat:
-//                             @"oauth_consumer_key=\"%@\", %@oauth_signature_method=\"%@\", oauth_signature=\"%@\", oauth_timestamp=\"%@\", oauth_nonce=\"%@\", oauth_version=\"1.0\"",
-//                             [self URLEncodedString: consumer.key],
-//                             oauthToken,
-//                             [self URLEncodedString: [signatureProvider name]],
-//                             [self URLEncodedString: signature],
-//                             timestamp,
-//                             nonce
-//							 ];
 	
 	if (token.pin.length) oauthHeader = [oauthHeader stringByAppendingFormat: @", oauth_verifier=\"%@\"", token.pin];					//added for the Twitter OAuth implementation
     [self setValue:oauthHeader forHTTPHeaderField:@"Authorization"];
@@ -219,7 +210,7 @@ signatureProvider:(id<OASignatureProviding, NSObject>)aProvider
 					 [self URLEncodedString: [self URLStringWithoutQueryFromURL: [self URL]]],
 					 [self URLEncodedString: normalizedRequestParameters]];
 	
-	NSLog(@"String: %@, Array: %@", ret, normalizedRequestParameters);
+	NSLog(@"String: %@\r\nArray: %@", ret, normalizedRequestParameters);
 	return ret;
 }
 
