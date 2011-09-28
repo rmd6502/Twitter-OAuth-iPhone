@@ -479,7 +479,8 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
         
         NSObject *dataParam = [params valueForKey:key];
         if ([dataParam isKindOfClass:[UIImage class]]) {
-            NSData* imageData = UIImagePNGRepresentation((UIImage*)dataParam);
+            //NSData* imageData = UIImagePNGRepresentation((UIImage*)dataParam);
+            NSData* imageData = [[UIImageJPEGRepresentation((UIImage *)dataParam, 1.0) base64EncodingWithLineLength:0] dataUsingEncoding:NSUTF8StringEncoding];
             NSLog(@"image data size %u", imageData.length);
             [self utfAppendBody:body
                            data:[NSString stringWithFormat:
@@ -491,8 +492,6 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
             [body appendData:imageData];
             [debugStr appendString:@"<image data>"];
             
-            [self utfAppendBody:body data:@"\r\n"];
-            [debugStr appendString:@"\r\n"];
         } else {
             NSAssert([dataParam isKindOfClass:[NSData class]],
                      @"dataParam must be a UIImage or NSData");
@@ -505,10 +504,10 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
             [debugStr appendString:@"Content-Type: content/unknown\r\n\r\n"];
             [body appendData:(NSData*)dataParam];
             [debugStr appendString:@"<other data>"];
-            
-            [self utfAppendBody:body data:@"\r\n"];
-            [debugStr appendString:@"\r\n"];
         }
+        
+        [self utfAppendBody:body data:@"\r\n"];
+        [debugStr appendString:@"\r\n"];
     }
     
     if ([dataDictionary count] > 0) {
@@ -1181,7 +1180,7 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
 - (NSString *)sendUpdate:(NSString *)status withMedia:(UIImage *)media lat:(double *)lat lon:(double *)lon {
     NSMutableDictionary *params = [NSMutableDictionary dictionaryWithCapacity:10];
     [params setObject:status forKey:@"status"];
-    [params setObject:media forKey:@"media[]"];
+    [params setObject:media forKey:@"media_data[]"];
     if (lat != nil && lon != nil) {
         [params setObject:[NSNumber numberWithDouble:*lat] forKey:@"lat"];
         [params setObject:[NSNumber numberWithDouble:*lon] forKey:@"long"];

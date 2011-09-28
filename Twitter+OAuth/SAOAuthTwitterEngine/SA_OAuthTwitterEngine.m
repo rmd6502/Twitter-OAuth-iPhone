@@ -298,9 +298,9 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
     [theRequest setHTTPShouldHandleCookies:NO];
     
     // Set headers for client information, for tracking purposes at Twitter.
-    [theRequest setValue:_clientName    forHTTPHeaderField:@"X-Twitter-Client"];
-    [theRequest setValue:_clientVersion forHTTPHeaderField:@"X-Twitter-Client-Version"];
-    [theRequest setValue:_clientURL     forHTTPHeaderField:@"X-Twitter-Client-URL"];
+    [theRequest setValue:_clientName        forHTTPHeaderField:@"X-Twitter-Client"];
+    [theRequest setValue:_clientVersion     forHTTPHeaderField:@"X-Twitter-Client-Version"];
+    [theRequest setValue:_clientURL         forHTTPHeaderField:@"X-Twitter-Client-URL"];
     
     NSLog(@"URL: %@", finalURL);
     // Set the request body if this is a POST request.
