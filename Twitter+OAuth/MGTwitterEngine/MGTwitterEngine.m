@@ -1195,6 +1195,7 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
                            responseType:MGTwitterStatus];
 }
 
+#if 0
 /**
   * Body append for POST method
   */
@@ -1259,6 +1260,7 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
     
     return body;
 }
+#endif
 
 #pragma mark -
 
