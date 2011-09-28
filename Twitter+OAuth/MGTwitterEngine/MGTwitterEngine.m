@@ -88,6 +88,7 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
 
 @implementation MGTwitterEngine
 @synthesize delegate = _delegate;
+@synthesize statusCode;
 
 #pragma mark Constructors
 
@@ -931,7 +932,7 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
     
     // Get response code.
     NSHTTPURLResponse *resp = (NSHTTPURLResponse *)response;
-    int statusCode = [resp statusCode];
+    statusCode = [resp statusCode];
     
     if (statusCode >= 400) {
         // Assume failure, and report to delegate.
@@ -942,11 +943,11 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
         NSLog(@"headers for failed response: %@", resp.allHeaderFields);
         
         // Destroy the connection.
-        [connection cancel];
-		NSString *connectionIdentifier = [connection identifier];
-		[_connections removeObjectForKey:connectionIdentifier];
-		if ([self _isValidDelegateForSelector:@selector(connectionFinished:)])
-			[_delegate connectionFinished:connectionIdentifier];
+//        [connection cancel];
+//		NSString *connectionIdentifier = [connection identifier];
+//		[_connections removeObjectForKey:connectionIdentifier];
+//		if ([self _isValidDelegateForSelector:@selector(connectionFinished:)])
+//			[_delegate connectionFinished:connectionIdentifier];
 			        
     } else if (statusCode == 304 || [connection responseType] == MGTwitterGeneric) {
         // Not modified, or generic success.
@@ -1009,13 +1010,13 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
     NSData *receivedData = [connection data];
     if (receivedData) {
 #if DEBUG
-        if (NO) {
+        if (YES) {
             // Dump data as string for debugging.
             NSString *dataString = [NSString stringWithUTF8String:[receivedData bytes]];
             NSLog(@"MGTwitterEngine: Succeeded! Received %d bytes of data:\r\r%@", [receivedData length], dataString);
         }
         
-        if (NO) {
+        if (YES) {
             // Dump XML to file for debugging.
             NSString *dataString = [NSString stringWithUTF8String:[receivedData bytes]];
             [dataString writeToFile:[[NSString stringWithFormat:@"~/Desktop/twitter_messages.%@", API_FORMAT] stringByExpandingTildeInPath] 

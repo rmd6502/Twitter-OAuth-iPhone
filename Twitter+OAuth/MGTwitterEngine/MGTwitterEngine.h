@@ -33,6 +33,7 @@
 }
 
 @property (assign) NSObject <MGTwitterEngineDelegate> *delegate;
+@property (readonly) NSUInteger statusCode;
 #pragma mark Class management
 
 // Constructors
