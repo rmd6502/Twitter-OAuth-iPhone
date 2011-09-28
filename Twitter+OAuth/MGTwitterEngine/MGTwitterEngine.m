@@ -448,6 +448,94 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
     return [connection identifier];
 }
 
+/**
+ * Body append for POST method
+ */
+- (void)utfAppendBody:(NSMutableData *)body data:(NSString *)data {
+    [body appendData:[data dataUsingEncoding:NSUTF8StringEncoding]];
+}
+
+/**
+ * Generate body for POST method
+ */
+- (NSMutableData *)generatePostBodyWithParams:(NSDictionary *)params {
+    NSMutableString *debugStr = [NSMutableString string];
+    NSMutableData *body = [NSMutableData data];
+    NSString *startLine = [NSString stringWithFormat:@"--%@\r\n", kStringBoundary];
+    NSMutableDictionary *dataDictionary = [NSMutableDictionary dictionary];
+    
+    for (id key in [params keyEnumerator]) {
+        
+        if ((![[params valueForKey:key] isKindOfClass:[UIImage class]])
+            &&(![[params valueForKey:key] isKindOfClass:[NSData class]])) {
+            
+            [dataDictionary setObject:[params valueForKey:key] forKey:key];
+            continue;
+            
+        }
+        
+        [self utfAppendBody:body data:startLine];
+        [debugStr appendString:startLine];
+        
+        NSObject *dataParam = [params valueForKey:key];
+        if ([dataParam isKindOfClass:[UIImage class]]) {
+            //NSData* imageData = UIImagePNGRepresentation((UIImage*)dataParam);
+            NSData* imageData = [[UIImageJPEGRepresentation((UIImage *)dataParam, 1.0) base64EncodingWithLineLength:0] dataUsingEncoding:NSUTF8StringEncoding];
+            NSLog(@"image data size %u", imageData.length);
+            [self utfAppendBody:body
+                           data:[NSString stringWithFormat:
+                                 @"Content-Disposition: form-data; name=\"%@\"; filename=\"./image.png\"r\n", key]];
+            [debugStr appendFormat:@"Content-Disposition: form-data; name=\"%@\"; filename=\"./image.png\"\r\n", key];
+            [self utfAppendBody:body
+                           data:[NSString stringWithString:@"Content-Type: application/octet-stream\r\n\r\n"]];
+            [debugStr appendString:@"Content-Type: application/octet-stream\r\n\r\n"];
+            [body appendData:imageData];
+            [debugStr appendString:@"<image data>"];
+            
+        } else {
+            NSAssert([dataParam isKindOfClass:[NSData class]],
+                     @"dataParam must be a UIImage or NSData");
+            [self utfAppendBody:body
+                           data:[NSString stringWithFormat:
+                                 @"Content-Disposition: form-data; filename=\"%@\"\r\n", key]];
+            [debugStr appendFormat:@"Content-Disposition: form-data; filename=\"%@\"\r\n", key];
+            [self utfAppendBody:body
+                           data:[NSString stringWithString:@"Content-Type: content/unknown\r\n\r\n"]];
+            [debugStr appendString:@"Content-Type: content/unknown\r\n\r\n"];
+            [body appendData:(NSData*)dataParam];
+            [debugStr appendString:@"<other data>"];
+        }
+        
+        [self utfAppendBody:body data:@"\r\n"];
+        [debugStr appendString:@"\r\n"];
+    }
+    
+    if ([dataDictionary count] > 0) {
+        for (id key in dataDictionary) {
+            [self utfAppendBody:body data:startLine];
+            [debugStr appendString:startLine];
+            
+            [self utfAppendBody:body
+                           data:[NSString
+                                 stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n",
+                                 key]];
+            [self utfAppendBody:body data:[dataDictionary valueForKey:key]];
+            
+            [debugStr appendFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", key];
+            [debugStr appendString:[dataDictionary valueForKey:key]];
+            
+            [self utfAppendBody:body data:@"\r\n"];
+            [debugStr appendString:@"\r\n"];
+        }
+    }
+    
+    [self utfAppendBody:body data:[NSString stringWithFormat:@"--%@--\r\n", kStringBoundary]];
+    [debugStr appendFormat:@"--%@--\r\n", kStringBoundary];
+    
+    NSLog(@"form data: %@", debugStr);
+    return body;
+}
+
 
 #pragma mark Request sending methods
 
@@ -849,6 +937,8 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
 		if ([self _isValidDelegateForSelector:@selector(requestFailed:withError:)])
 			[_delegate requestFailed:[connection identifier] withError:error];
         
+        NSLog(@"headers for failed response: %@", resp.allHeaderFields);
+        
         // Destroy the connection.
         [connection cancel];
 		NSString *connectionIdentifier = [connection identifier];
@@ -1090,13 +1180,13 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
 - (NSString *)sendUpdate:(NSString *)status withMedia:(UIImage *)media lat:(double *)lat lon:(double *)lon {
     NSMutableDictionary *params = [NSMutableDictionary dictionaryWithCapacity:10];
     [params setObject:status forKey:@"status"];
-    [params setObject:media forKey:@"media[]"];
+    [params setObject:media forKey:@"media_data[]"];
     if (lat != nil && lon != nil) {
         [params setObject:[NSNumber numberWithDouble:*lat] forKey:@"lat"];
         [params setObject:[NSNumber numberWithDouble:*lon] forKey:@"long"];
     }
     
-    NSString *path = [NSString stringWithFormat:@"1/statuses/update_with_media.%@", API_FORMAT];
+    NSString *path = [NSString stringWithFormat:@"1/statuses/update_with_media.json"/*, API_FORMAT*/];
     
     return [self _sendRequestWithMethod:HTTP_POST_METHOD path:path 
                         queryParameters:params body:nil 
@@ -1104,73 +1194,7 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
                            responseType:MGTwitterStatus];
 }
 
-/**
-  * Body append for POST method
-  */
-- (void)utfAppendBody:(NSMutableData *)body data:(NSString *)data {
-    [body appendData:[data dataUsingEncoding:NSUTF8StringEncoding]];
-    }
-
-/**
-  * Generate body for POST method
-  */
-- (NSMutableData *)generatePostBodyWithParams:(NSDictionary *)params {
-    NSMutableData *body = [NSMutableData data];
-    NSString *endLine = [NSString stringWithFormat:@"\r\n--%@\r\n", kStringBoundary];
-    NSMutableDictionary *dataDictionary = [NSMutableDictionary dictionary];
-    
-    [self utfAppendBody:body data:[NSString stringWithFormat:@"--%@\r\n", kStringBoundary]];
-    
-    for (id key in [params keyEnumerator]) {
-        
-        if (([[params valueForKey:key] isKindOfClass:[UIImage class]])
-            ||([[params valueForKey:key] isKindOfClass:[NSData class]])) {
-            
-            [dataDictionary setObject:[params valueForKey:key] forKey:key];
-            continue;
-            
-        }
-        
-        [self utfAppendBody:body
-                       data:[NSString
-                             stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n",
-                             key]];
-        [self utfAppendBody:body data:[params valueForKey:key]];
-        
-        [self utfAppendBody:body data:endLine];
-    }
-    
-    if ([dataDictionary count] > 0) {
-        for (id key in dataDictionary) {
-            NSObject *dataParam = [dataDictionary valueForKey:key];
-            if ([dataParam isKindOfClass:[UIImage class]]) {
-                NSData* imageData = UIImagePNGRepresentation((UIImage*)dataParam);
-                [self utfAppendBody:body
-                               data:[NSString stringWithFormat:
-                                     @"Content-Disposition: form-data; filename=\"%@\"\r\n", key]];
-                [self utfAppendBody:body
-                               data:[NSString stringWithString:@"Content-Type: image/png\r\n\r\n"]];
-                [body appendData:imageData];
-            } else {
-                NSAssert([dataParam isKindOfClass:[NSData class]],
-                         @"dataParam must be a UIImage or NSData");
-                [self utfAppendBody:body
-                               data:[NSString stringWithFormat:
-                                     @"Content-Disposition: form-data; filename=\"%@\"\r\n", key]];
-                [self utfAppendBody:body
-                               data:[NSString stringWithString:@"Content-Type: content/unknown\r\n\r\n"]];
-                [body appendData:(NSData*)dataParam];
-            }
-            [self utfAppendBody:body data:endLine];
-            
-        }
-    }
-    
-    return body;
-}
-
 #pragma mark -
-
 
 - (NSString *)getRepliesStartingAtPage:(int)page
 {

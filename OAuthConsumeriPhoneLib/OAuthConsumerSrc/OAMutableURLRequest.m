@@ -140,18 +140,8 @@ signatureProvider:(id<OASignatureProviding, NSObject>)aProvider
     else
         oauthToken = [NSString stringWithFormat:@"oauth_token=\"%@\", ", [self URLEncodedString: token.key]];
     
-//    NSString *oauthHeader = [NSString stringWithFormat:
-//			@"OAuth realm=\"%@\", oauth_consumer_key=\"%@\", %@oauth_signature_method=\"%@\", oauth_signature=\"%@\", oauth_timestamp=\"%@\", oauth_nonce=\"%@\", oauth_version=\"1.0\"",
-//                             [self URLEncodedString: realm],
-//                             [self URLEncodedString: consumer.key],
-//                             oauthToken,
-//                             [self URLEncodedString: [signatureProvider name]],
-//                             [self URLEncodedString: signature],
-//                             timestamp,
-//                             nonce
-//							 ];
     NSString *oauthHeader = [NSString stringWithFormat:
-                             @"oauth_consumer_key=\"%@\", %@oauth_signature_method=\"%@\", oauth_signature=\"%@\", oauth_timestamp=\"%@\", oauth_nonce=\"%@\", oauth_version=\"1.0\"",
+			@"OAuth realm=\"%@\", oauth_consumer_key=\"%@\", %@oauth_signature_method=\"%@\", oauth_signature=\"%@\", oauth_timestamp=\"%@\", oauth_nonce=\"%@\", oauth_version=\"1.0\"",
                              [self URLEncodedString: realm],
                              [self URLEncodedString: consumer.key],
                              oauthToken,
@@ -160,6 +150,15 @@ signatureProvider:(id<OASignatureProviding, NSObject>)aProvider
                              timestamp,
                              nonce
 							 ];
+//    NSString *oauthHeader = [NSString stringWithFormat:
+//                             @"oauth_consumer_key=\"%@\", %@oauth_signature_method=\"%@\", oauth_signature=\"%@\", oauth_timestamp=\"%@\", oauth_nonce=\"%@\", oauth_version=\"1.0\"",
+//                             [self URLEncodedString: consumer.key],
+//                             oauthToken,
+//                             [self URLEncodedString: [signatureProvider name]],
+//                             [self URLEncodedString: signature],
+//                             timestamp,
+//                             nonce
+//							 ];
 	
 	if (token.pin.length) oauthHeader = [oauthHeader stringByAppendingFormat: @", oauth_verifier=\"%@\"", token.pin];					//added for the Twitter OAuth implementation
     [self setValue:oauthHeader forHTTPHeaderField:@"Authorization"];
