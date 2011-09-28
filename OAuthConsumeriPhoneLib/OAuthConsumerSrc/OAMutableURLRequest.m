@@ -140,18 +140,8 @@ signatureProvider:(id<OASignatureProviding, NSObject>)aProvider
     else
         oauthToken = [NSString stringWithFormat:@"oauth_token=\"%@\", ", [self URLEncodedString: token.key]];
     
-//    NSString *oauthHeader = [NSString stringWithFormat:
-//			@"OAuth realm=\"%@\", oauth_consumer_key=\"%@\", %@oauth_signature_method=\"%@\", oauth_signature=\"%@\", oauth_timestamp=\"%@\", oauth_nonce=\"%@\", oauth_version=\"1.0\"",
-//                             [self URLEncodedString: realm],
-//                             [self URLEncodedString: consumer.key],
-//                             oauthToken,
-//                             [self URLEncodedString: [signatureProvider name]],
-//                             [self URLEncodedString: signature],
-//                             timestamp,
-//                             nonce
-//							 ];
     NSString *oauthHeader = [NSString stringWithFormat:
-                             @"oauth_consumer_key=\"%@\", %@oauth_signature_method=\"%@\", oauth_signature=\"%@\", oauth_timestamp=\"%@\", oauth_nonce=\"%@\", oauth_version=\"1.0\"",
+			@"OAuth realm=\"%@\", oauth_consumer_key=\"%@\", %@oauth_signature_method=\"%@\", oauth_signature=\"%@\", oauth_timestamp=\"%@\", oauth_nonce=\"%@\", oauth_version=\"1.0\"",
                              [self URLEncodedString: realm],
                              [self URLEncodedString: consumer.key],
                              oauthToken,
@@ -160,6 +150,16 @@ signatureProvider:(id<OASignatureProviding, NSObject>)aProvider
                              timestamp,
                              nonce
 							 ];
+//    NSString *oauthHeader = [NSString stringWithFormat:
+//                             @"oauth_consumer_key=\"%@\", %@oauth_signature_method=\"%@\", oauth_signature=\"%@\", oauth_timestamp=\"%@\", oauth_nonce=\"%@\", oauth_version=\"1.0\"",
+//                             [self URLEncodedString: realm],
+//                             [self URLEncodedString: consumer.key],
+//                             oauthToken,
+//                             [self URLEncodedString: [signatureProvider name]],
+//                             [self URLEncodedString: signature],
+//                             timestamp,
+//                             nonce
+//							 ];
 //    NSString *oauthHeader = [NSString stringWithFormat:
 //                             @"oauth_consumer_key=\"%@\", %@oauth_signature_method=\"%@\", oauth_signature=\"%@\", oauth_timestamp=\"%@\", oauth_nonce=\"%@\", oauth_version=\"1.0\"",
 //                             [self URLEncodedString: consumer.key],
@@ -195,7 +195,7 @@ signatureProvider:(id<OASignatureProviding, NSObject>)aProvider
 {
     // OAuth Spec, Section 9.1.1 "Normalize Request Parameters"
     // build a sorted array of both request parameters and OAuth header parameters
-    NSMutableArray *parameterPairs = [NSMutableArray  arrayWithCapacity:(6 + [[self parameters] count])]; // 6 being the number of OAuth params in the Signature Base String
+    NSMutableArray *parameterPairs = [NSMutableArray  arrayWithCapacity:(7 + [[self parameters] count])]; // 6 being the number of OAuth params in the Signature Base String
     
 	[parameterPairs addObject:[[OARequestParameter requestParameterWithName:@"oauth_consumer_key" value:consumer.key] URLEncodedNameValuePair]];
 	[parameterPairs addObject:[[OARequestParameter requestParameterWithName:@"oauth_signature_method" value:[signatureProvider name]] URLEncodedNameValuePair]];
@@ -247,8 +247,12 @@ signatureProvider:(id<OASignatureProviding, NSObject>)aProvider
         encodedParameters = [[NSString alloc] initWithData:[self HTTPBody] encoding:NSASCIIStringEncoding];
     }
     
-    if ((encodedParameters == nil) || ([encodedParameters isEqualToString:@""]) || ([[self valueForHTTPHeaderField:@"Content-Type"] rangeOfString:@"multipart/form_data"].location != NSNotFound))
-        return nil;
+    NSString *header = [self valueForHTTPHeaderField:@"Content-Type"];
+    if ((encodedParameters == nil) || ([encodedParameters isEqualToString:@""]) 
+        || (header != nil && ([header rangeOfString:@"multipart/form_data"].location != NSNotFound))) {
+        NSLog(@"encodedParameters %@ header %@", encodedParameters, header);
+        return nil;        
+    }
     
     NSArray *encodedParameterPairs = [encodedParameters componentsSeparatedByString:@"&"];
     NSMutableArray *requestParameters = [[NSMutableArray alloc] initWithCapacity:16];
@@ -260,6 +264,8 @@ signatureProvider:(id<OASignatureProviding, NSObject>)aProvider
 																			   value:[self URLEncodedString: [encodedPairElements objectAtIndex:1]]];
         [requestParameters addObject:parameter];
     }
+    
+    NSLog(@"requestparameters %@", requestParameters);
     
 	// Cleanup
 	if (shouldfree)
