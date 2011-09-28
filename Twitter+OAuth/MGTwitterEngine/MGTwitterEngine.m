@@ -1186,12 +1186,77 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
         [params setObject:[NSNumber numberWithDouble:*lon] forKey:@"long"];
     }
     
-    NSString *path = [NSString stringWithFormat:@"1/statuses/update_with_media.json"/*, API_FORMAT*/];
+    NSString *path = [NSString stringWithFormat:@"1/statuses/update_with_media.%@", API_FORMAT];
     
     return [self _sendRequestWithMethod:HTTP_POST_METHOD path:path 
                         queryParameters:params body:nil 
                             requestType:MGTwitterUpdateSendMediaRequest
                            responseType:MGTwitterStatus];
+}
+
+/**
+  * Body append for POST method
+  */
+- (void)utfAppendBody:(NSMutableData *)body data:(NSString *)data {
+    [body appendData:[data dataUsingEncoding:NSUTF8StringEncoding]];
+    }
+
+/**
+  * Generate body for POST method
+  */
+- (NSMutableData *)generatePostBodyWithParams:(NSDictionary *)params {
+    NSMutableData *body = [NSMutableData data];
+    NSString *endLine = [NSString stringWithFormat:@"\r\n--%@\r\n", kStringBoundary];
+    NSMutableDictionary *dataDictionary = [NSMutableDictionary dictionary];
+    
+    [self utfAppendBody:body data:[NSString stringWithFormat:@"--%@\r\n", kStringBoundary]];
+    
+    for (id key in [params keyEnumerator]) {
+        
+        if (([[params valueForKey:key] isKindOfClass:[UIImage class]])
+            ||([[params valueForKey:key] isKindOfClass:[NSData class]])) {
+            
+            [dataDictionary setObject:[params valueForKey:key] forKey:key];
+            continue;
+            
+        }
+        
+        [self utfAppendBody:body
+                       data:[NSString
+                             stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n",
+                             key]];
+        [self utfAppendBody:body data:[params valueForKey:key]];
+        
+        [self utfAppendBody:body data:endLine];
+    }
+    
+    if ([dataDictionary count] > 0) {
+        for (id key in dataDictionary) {
+            NSObject *dataParam = [dataDictionary valueForKey:key];
+            if ([dataParam isKindOfClass:[UIImage class]]) {
+                NSData* imageData = UIImagePNGRepresentation((UIImage*)dataParam);
+                [self utfAppendBody:body
+                               data:[NSString stringWithFormat:
+                                     @"Content-Disposition: form-data; filename=\"%@\"\r\n", key]];
+                [self utfAppendBody:body
+                               data:[NSString stringWithString:@"Content-Type: image/png\r\n\r\n"]];
+                [body appendData:imageData];
+            } else {
+                NSAssert([dataParam isKindOfClass:[NSData class]],
+                         @"dataParam must be a UIImage or NSData");
+                [self utfAppendBody:body
+                               data:[NSString stringWithFormat:
+                                     @"Content-Disposition: form-data; filename=\"%@\"\r\n", key]];
+                [self utfAppendBody:body
+                               data:[NSString stringWithString:@"Content-Type: content/unknown\r\n\r\n"]];
+                [body appendData:(NSData*)dataParam];
+            }
+            [self utfAppendBody:body data:endLine];
+            
+        }
+    }
+    
+    return body;
 }
 
 #pragma mark -
