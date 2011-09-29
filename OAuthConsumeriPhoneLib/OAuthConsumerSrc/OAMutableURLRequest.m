@@ -129,6 +129,9 @@ signatureProvider:(id<OASignatureProviding, NSObject>)aProvider
 	
 	NSString					*consumerSecret = [self URLEncodedString: consumer.secret];
 	NSString					*tokenSecret = [self URLEncodedString: token.secret];
+    
+    NSString *secretKey = [NSString stringWithFormat:@"%@&%@", consumerSecret, tokenSecret];
+    NSLog(@"secret key \"%@\"", secretKey);
 	
     signature = [signatureProvider signClearText:[self _signatureBaseString]
                                       withSecret:[NSString stringWithFormat:@"%@&%@", consumerSecret, tokenSecret]];
@@ -151,15 +154,14 @@ signatureProvider:(id<OASignatureProviding, NSObject>)aProvider
 //                             nonce
 //							 ];
     NSString *oauthHeader = [NSString stringWithFormat:
-                             @"oauth_consumer_key=\"%@\", %@oauth_signature_method=\"%@\", oauth_signature=\"%@\", oauth_timestamp=\"%@\", oauth_nonce=\"%@\", oauth_version=\"1.0\"",
-                             [self URLEncodedString: realm],
+                             @"OAuth oauth_consumer_key=\"%@\", oauth_nonce=\"%@\", oauth_signature=\"%@\", oauth_signature_method=\"%@\", oauth_timestamp=\"%@\", %@oauth_version=\"1.0\"",
                              [self URLEncodedString: consumer.key],
-                             oauthToken,
-                             [self URLEncodedString: [signatureProvider name]],
+                             nonce,
                              [self URLEncodedString: signature],
+                             [self URLEncodedString: [signatureProvider name]],
                              timestamp,
-                             nonce
-							 ];
+                             oauthToken
+                             ];
 //    NSString *oauthHeader = [NSString stringWithFormat:
 //                             @"oauth_consumer_key=\"%@\", %@oauth_signature_method=\"%@\", oauth_signature=\"%@\", oauth_timestamp=\"%@\", oauth_nonce=\"%@\", oauth_version=\"1.0\"",
 //                             [self URLEncodedString: consumer.key],
@@ -188,7 +190,9 @@ signatureProvider:(id<OASignatureProviding, NSObject>)aProvider
     CFUUIDRef theUUID = CFUUIDCreate(NULL);
     CFStringRef string = CFUUIDCreateString(NULL, theUUID);
     CFRelease(theUUID);
-    nonce = (NSString *)string;
+    nonce = [(NSString *)string stringByReplacingOccurrencesOfString:@"-" withString:@""];
+    CFRelease(string);
+    [nonce retain];
 }
 
 - (NSString *)_signatureBaseString 
@@ -246,8 +250,8 @@ signatureProvider:(id<OASignatureProviding, NSObject>)aProvider
 		shouldfree = YES;
         encodedParameters = [[NSString alloc] initWithData:[self HTTPBody] encoding:NSASCIIStringEncoding];
     }
-    
-    if ((encodedParameters == nil) || ([encodedParameters isEqualToString:@""]) || ([[self valueForHTTPHeaderField:@"Content-Type"] rangeOfString:@"multipart/form_data"].location != NSNotFound))
+    NSString *headerField = [self valueForHTTPHeaderField:@"Content-Type"];
+    if ((encodedParameters == nil) || ([encodedParameters isEqualToString:@""]) || (headerField != nil && [headerField rangeOfString:@"multipart/form-data"].location != NSNotFound))
         return nil;
     
     NSArray *encodedParameterPairs = [encodedParameters componentsSeparatedByString:@"&"];

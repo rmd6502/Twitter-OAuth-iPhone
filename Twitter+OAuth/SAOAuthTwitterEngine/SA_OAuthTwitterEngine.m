@@ -298,9 +298,10 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
     [theRequest setHTTPShouldHandleCookies:NO];
     
     // Set headers for client information, for tracking purposes at Twitter.
-    [theRequest setValue:_clientName    forHTTPHeaderField:@"X-Twitter-Client"];
-    [theRequest setValue:_clientVersion forHTTPHeaderField:@"X-Twitter-Client-Version"];
-    [theRequest setValue:_clientURL     forHTTPHeaderField:@"X-Twitter-Client-URL"];
+//    [theRequest setValue:_clientName    forHTTPHeaderField:@"X-Twitter-Client"];
+//    [theRequest setValue:_clientVersion forHTTPHeaderField:@"X-Twitter-Client-Version"];
+//    [theRequest setValue:_clientURL     forHTTPHeaderField:@"X-Twitter-Client-URL"];
+    [theRequest setValue:@"*/*" forHTTPHeaderField:@"Accept"];
     
     NSLog(@"URL: %@", finalURL);
     // Set the request body if this is a POST request.
@@ -310,7 +311,7 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
 //            if (_clientSourceToken && [params objectForKey:@"source"] == nil) {
 //                [params setValue:_clientSourceToken forKey:@"source"];
 //            }
-            [theRequest setValue:[NSString stringWithFormat:@"multipart/form_data; boundary=%@", kStringBoundary] forHTTPHeaderField:@"Content-Type"];
+            [theRequest setValue:[NSString stringWithFormat:@"multipart/form-data; boundary=%@", kStringBoundary] forHTTPHeaderField:@"Content-Type"];
             [theRequest setHTTPBody:[self generatePostBodyWithParams:params]];
             [theRequest setValue:[NSString stringWithFormat:@"%u",theRequest.HTTPBody.length] forHTTPHeaderField:@"Content-Length"];
             //NSString *bodyStr = [[NSString alloc] initWithData:theRequest.HTTPBody encoding:NSUTF8StringEncoding];

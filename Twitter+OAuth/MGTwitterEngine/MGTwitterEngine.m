@@ -88,6 +88,7 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
 
 @implementation MGTwitterEngine
 @synthesize delegate = _delegate;
+@synthesize statusCode;
 
 #pragma mark Constructors
 
@@ -479,15 +480,15 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
         
         NSObject *dataParam = [params valueForKey:key];
         if ([dataParam isKindOfClass:[UIImage class]]) {
-            NSData* imageData = UIImagePNGRepresentation((UIImage*)dataParam);
+            NSData* imageData = UIImageJPEGRepresentation((UIImage*)dataParam, 1.0);
             NSLog(@"image data size %u", imageData.length);
             [self utfAppendBody:body
                            data:[NSString stringWithFormat:
-                                 @"Content-Disposition: form-data; name=\"%@\"; filename=\"./image.png\"r\n", key]];
-            [debugStr appendFormat:@"Content-Disposition: form-data; name=\"%@\"; filename=\"./image.png\"\r\n", key];
+                                   @"Content-Disposition: form-data; name=\"%@\"; filename=\"image.jpeg\"\r\n", key]];
+            [debugStr appendFormat:@"Content-Disposition: form-data; name=\"%@\"; filename=\"image.jpeg\"\r\n", key];
             [self utfAppendBody:body
-                           data:[NSString stringWithString:@"Content-Type: application/octet-stream\r\n\r\n"]];
-            [debugStr appendString:@"Content-Type: application/octet-stream\r\n\r\n"];
+                           data:[NSString stringWithString:@"Content-Type: image/jpeg\r\n\r\n"]];
+            [debugStr appendString:                        @"Content-Type: image/jpeg\r\n\r\n"];
             [body appendData:imageData];
             [debugStr appendString:@"<image data>"];
             
@@ -498,7 +499,7 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
                      @"dataParam must be a UIImage or NSData");
             [self utfAppendBody:body
                            data:[NSString stringWithFormat:
-                                 @"Content-Disposition: form-data; filename=\"%@\"\r\n", key]];
+                                   @"Content-Disposition: form-data; filename=\"%@\"\r\n", key]];
             [debugStr appendFormat:@"Content-Disposition: form-data; filename=\"%@\"\r\n", key];
             [self utfAppendBody:body
                            data:[NSString stringWithString:@"Content-Type: content/unknown\r\n\r\n"]];
@@ -522,7 +523,7 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
                                  key]];
             [self utfAppendBody:body data:[dataDictionary valueForKey:key]];
             
-            [debugStr appendFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", key];
+            [debugStr appendFormat:               @"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", key];
             [debugStr appendString:[dataDictionary valueForKey:key]];
             
             [self utfAppendBody:body data:@"\r\n"];
@@ -533,7 +534,7 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
     [self utfAppendBody:body data:[NSString stringWithFormat:@"--%@--\r\n", kStringBoundary]];
     [debugStr appendFormat:@"--%@--\r\n", kStringBoundary];
     
-    NSLog(@"form data: %@", debugStr);
+    NSLog(@"form data: %@\n\n", debugStr);
     return body;
 }
 
@@ -653,9 +654,10 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
     [theRequest setHTTPShouldHandleCookies:NO];
     
     // Set headers for client information, for tracking purposes at Twitter.
-    [theRequest setValue:_clientName    forHTTPHeaderField:@"X-Twitter-Client"];
-    [theRequest setValue:_clientVersion forHTTPHeaderField:@"X-Twitter-Client-Version"];
-    [theRequest setValue:_clientURL     forHTTPHeaderField:@"X-Twitter-Client-URL"];
+//    [theRequest setValue:_clientName    forHTTPHeaderField:@"X-Twitter-Client"];
+//    [theRequest setValue:_clientVersion forHTTPHeaderField:@"X-Twitter-Client-Version"];
+//    [theRequest setValue:_clientURL     forHTTPHeaderField:@"X-Twitter-Client-URL"];
+    [theRequest setValue:@"*/*" forHTTPHeaderField:@"Accept"];
     
 #if SET_AUTHORIZATION_IN_HEADER
 	if ([self username] && [self password]) {
@@ -930,7 +932,7 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
     
     // Get response code.
     NSHTTPURLResponse *resp = (NSHTTPURLResponse *)response;
-    int statusCode = [resp statusCode];
+    statusCode = [resp statusCode];
     
     if (statusCode >= 400) {
         // Assume failure, and report to delegate.
@@ -941,11 +943,11 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
         NSLog(@"headers for failed response: %@", resp.allHeaderFields);
         
         // Destroy the connection.
-        [connection cancel];
-		NSString *connectionIdentifier = [connection identifier];
-		[_connections removeObjectForKey:connectionIdentifier];
-		if ([self _isValidDelegateForSelector:@selector(connectionFinished:)])
-			[_delegate connectionFinished:connectionIdentifier];
+//        [connection cancel];
+//		NSString *connectionIdentifier = [connection identifier];
+//		[_connections removeObjectForKey:connectionIdentifier];
+//		if ([self _isValidDelegateForSelector:@selector(connectionFinished:)])
+//			[_delegate connectionFinished:connectionIdentifier];
 			        
     } else if (statusCode == 304 || [connection responseType] == MGTwitterGeneric) {
         // Not modified, or generic success.
@@ -966,7 +968,7 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
     }
     
 #if DEBUG
-    if (NO) {
+    if (YES) {
         // Display headers for debugging.
         NSHTTPURLResponse *resp = (NSHTTPURLResponse *)response;
         NSLog(@"MGTwitterEngine: (%d) [%@]:\r%@", 
@@ -1002,19 +1004,19 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
 - (void)connectionDidFinishLoading:(MGTwitterHTTPURLConnection *)connection
 {
     // Inform delegate.
-	if ([self _isValidDelegateForSelector:@selector(requestSucceeded:)])
+	if (statusCode == 200 && [self _isValidDelegateForSelector:@selector(requestSucceeded:)])
 		[_delegate requestSucceeded:[connection identifier]];
     
     NSData *receivedData = [connection data];
     if (receivedData) {
 #if DEBUG
-        if (NO) {
+        if (YES) {
             // Dump data as string for debugging.
             NSString *dataString = [NSString stringWithUTF8String:[receivedData bytes]];
             NSLog(@"MGTwitterEngine: Succeeded! Received %d bytes of data:\r\r%@", [receivedData length], dataString);
         }
         
-        if (NO) {
+        if (YES) {
             // Dump XML to file for debugging.
             NSString *dataString = [NSString stringWithUTF8String:[receivedData bytes]];
             [dataString writeToFile:[[NSString stringWithFormat:@"~/Desktop/twitter_messages.%@", API_FORMAT] stringByExpandingTildeInPath] 
@@ -1158,7 +1160,7 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
         return nil;
     }
     
-    NSString *path = [NSString stringWithFormat:@"statuses/update.%@", API_FORMAT];
+    NSString *path = [NSString stringWithFormat:@"statuses/update.json", API_FORMAT];
     
     NSString *trimmedText = status;
     if ([trimmedText length] > MAX_MESSAGE_LENGTH) {
@@ -1193,71 +1195,6 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
                         queryParameters:params body:nil 
                             requestType:MGTwitterUpdateSendMediaRequest
                            responseType:MGTwitterStatus];
-}
-
-/**
-  * Body append for POST method
-  */
-- (void)utfAppendBody:(NSMutableData *)body data:(NSString *)data {
-    [body appendData:[data dataUsingEncoding:NSUTF8StringEncoding]];
-    }
-
-/**
-  * Generate body for POST method
-  */
-- (NSMutableData *)generatePostBodyWithParams:(NSDictionary *)params {
-    NSMutableData *body = [NSMutableData data];
-    NSString *endLine = [NSString stringWithFormat:@"\r\n--%@\r\n", kStringBoundary];
-    NSMutableDictionary *dataDictionary = [NSMutableDictionary dictionary];
-    
-    [self utfAppendBody:body data:[NSString stringWithFormat:@"--%@\r\n", kStringBoundary]];
-    
-    for (id key in [params keyEnumerator]) {
-        
-        if (([[params valueForKey:key] isKindOfClass:[UIImage class]])
-            ||([[params valueForKey:key] isKindOfClass:[NSData class]])) {
-            
-            [dataDictionary setObject:[params valueForKey:key] forKey:key];
-            continue;
-            
-        }
-        
-        [self utfAppendBody:body
-                       data:[NSString
-                             stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n",
-                             key]];
-        [self utfAppendBody:body data:[params valueForKey:key]];
-        
-        [self utfAppendBody:body data:endLine];
-    }
-    
-    if ([dataDictionary count] > 0) {
-        for (id key in dataDictionary) {
-            NSObject *dataParam = [dataDictionary valueForKey:key];
-            if ([dataParam isKindOfClass:[UIImage class]]) {
-                NSData* imageData = UIImagePNGRepresentation((UIImage*)dataParam);
-                [self utfAppendBody:body
-                               data:[NSString stringWithFormat:
-                                     @"Content-Disposition: form-data; filename=\"%@\"\r\n", key]];
-                [self utfAppendBody:body
-                               data:[NSString stringWithString:@"Content-Type: image/png\r\n\r\n"]];
-                [body appendData:imageData];
-            } else {
-                NSAssert([dataParam isKindOfClass:[NSData class]],
-                         @"dataParam must be a UIImage or NSData");
-                [self utfAppendBody:body
-                               data:[NSString stringWithFormat:
-                                     @"Content-Disposition: form-data; filename=\"%@\"\r\n", key]];
-                [self utfAppendBody:body
-                               data:[NSString stringWithString:@"Content-Type: content/unknown\r\n\r\n"]];
-                [body appendData:(NSData*)dataParam];
-            }
-            [self utfAppendBody:body data:endLine];
-            
-        }
-    }
-    
-    return body;
 }
 
 #pragma mark -
