@@ -303,7 +303,6 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
 //    [theRequest setValue:_clientURL     forHTTPHeaderField:@"X-Twitter-Client-URL"];
     [theRequest setValue:@"*/*" forHTTPHeaderField:@"Accept"];
     
-    NSLog(@"URL: %@", finalURL);
     // Set the request body if this is a POST request.
     if (isPOST) {
         if (body == nil) 
@@ -315,7 +314,6 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
             [theRequest setHTTPBody:[self generatePostBodyWithParams:params]];
             [theRequest setValue:[NSString stringWithFormat:@"%u",theRequest.HTTPBody.length] forHTTPHeaderField:@"Content-Length"];
             //NSString *bodyStr = [[NSString alloc] initWithData:theRequest.HTTPBody encoding:NSUTF8StringEncoding];
-            NSLog(@"request headers %@ params %@ len %u\n\n", theRequest.allHTTPHeaderFields, params, theRequest.HTTPBody.length);
             //[bodyStr release];
         } 
         else
@@ -342,7 +340,6 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
 	// our version "prepares" the oauth url request
 	// --------------------------------------------------------------------------------
     [theRequest prepare];
-    NSLog(@"after prepare: request headers %@ params %@ len %u\n\n", theRequest.allHTTPHeaderFields, params, theRequest.HTTPBody.length);
     
     // Create a connection using this request, with the default timeout and caching policy, 
     // and appropriate Twitter request and response types for parsing and error reporting.
