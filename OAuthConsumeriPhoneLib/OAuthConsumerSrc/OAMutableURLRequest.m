@@ -131,7 +131,6 @@ signatureProvider:(id<OASignatureProviding, NSObject>)aProvider
 	NSString					*tokenSecret = [self URLEncodedString: token.secret];
     
     NSString *secretKey = [NSString stringWithFormat:@"%@&%@", consumerSecret, tokenSecret];
-    NSLog(@"secret key \"%@\"", secretKey);
 	
     signature = [signatureProvider signClearText:[self _signatureBaseString]
                                       withSecret:[NSString stringWithFormat:@"%@&%@", consumerSecret, tokenSecret]];
@@ -174,7 +173,6 @@ signatureProvider:(id<OASignatureProviding, NSObject>)aProvider
 	
 	if (token.pin.length) oauthHeader = [oauthHeader stringByAppendingFormat: @", oauth_verifier=\"%@\"", token.pin];					//added for the Twitter OAuth implementation
     [self setValue:oauthHeader forHTTPHeaderField:@"Authorization"];
-	NSLog(@"Headers: %@", [self allHTTPHeaderFields]);
 }
 
 #pragma mark -
@@ -223,7 +221,6 @@ signatureProvider:(id<OASignatureProviding, NSObject>)aProvider
 					 [self URLEncodedString: [self URLStringWithoutQueryFromURL: [self URL]]],
 					 [self URLEncodedString: normalizedRequestParameters]];
 	
-	NSLog(@"String: %@, Array: %@", ret, normalizedRequestParameters);
 	return ret;
 }
 

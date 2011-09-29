@@ -460,7 +460,7 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
  * Generate body for POST method
  */
 - (NSMutableData *)generatePostBodyWithParams:(NSDictionary *)params {
-    NSMutableString *debugStr = [NSMutableString string];
+
     NSMutableData *body = [NSMutableData data];
     NSString *startLine = [NSString stringWithFormat:@"--%@\r\n", kStringBoundary];
     NSMutableDictionary *dataDictionary = [NSMutableDictionary dictionary];
@@ -476,46 +476,34 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
         }
         
         [self utfAppendBody:body data:startLine];
-        [debugStr appendString:startLine];
-        
+
         NSObject *dataParam = [params valueForKey:key];
         if ([dataParam isKindOfClass:[UIImage class]]) {
             NSData* imageData = UIImageJPEGRepresentation((UIImage*)dataParam, 1.0);
-            NSLog(@"image data size %u", imageData.length);
             [self utfAppendBody:body
                            data:[NSString stringWithFormat:
                                    @"Content-Disposition: form-data; name=\"%@\"; filename=\"image.jpeg\"\r\n", key]];
-            [debugStr appendFormat:@"Content-Disposition: form-data; name=\"%@\"; filename=\"image.jpeg\"\r\n", key];
             [self utfAppendBody:body
                            data:[NSString stringWithString:@"Content-Type: image/jpeg\r\n\r\n"]];
-            [debugStr appendString:                        @"Content-Type: image/jpeg\r\n\r\n"];
             [body appendData:imageData];
-            [debugStr appendString:@"<image data>"];
-            
             [self utfAppendBody:body data:@"\r\n"];
-            [debugStr appendString:@"\r\n"];
         } else {
             NSAssert([dataParam isKindOfClass:[NSData class]],
                      @"dataParam must be a UIImage or NSData");
             [self utfAppendBody:body
                            data:[NSString stringWithFormat:
                                    @"Content-Disposition: form-data; filename=\"%@\"\r\n", key]];
-            [debugStr appendFormat:@"Content-Disposition: form-data; filename=\"%@\"\r\n", key];
             [self utfAppendBody:body
                            data:[NSString stringWithString:@"Content-Type: content/unknown\r\n\r\n"]];
-            [debugStr appendString:@"Content-Type: content/unknown\r\n\r\n"];
             [body appendData:(NSData*)dataParam];
-            [debugStr appendString:@"<other data>"];
             
             [self utfAppendBody:body data:@"\r\n"];
-            [debugStr appendString:@"\r\n"];
         }
     }
     
     if ([dataDictionary count] > 0) {
         for (id key in dataDictionary) {
             [self utfAppendBody:body data:startLine];
-            [debugStr appendString:startLine];
             
             [self utfAppendBody:body
                            data:[NSString
@@ -523,18 +511,12 @@ static NSString* kStringBoundary = @"RMDfv2rTHiSisAbouNdArYfORhtTPEefj3q2f";
                                  key]];
             [self utfAppendBody:body data:[dataDictionary valueForKey:key]];
             
-            [debugStr appendFormat:               @"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", key];
-            [debugStr appendString:[dataDictionary valueForKey:key]];
-            
             [self utfAppendBody:body data:@"\r\n"];
-            [debugStr appendString:@"\r\n"];
         }
     }
     
     [self utfAppendBody:body data:[NSString stringWithFormat:@"--%@--\r\n", kStringBoundary]];
-    [debugStr appendFormat:@"--%@--\r\n", kStringBoundary];
     
-    NSLog(@"form data: %@\n\n", debugStr);
     return body;
 }
 
